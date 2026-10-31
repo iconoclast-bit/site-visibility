@@ -1,36 +1,28 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Site Visibility
 
-## Getting Started
+One 3-minute daily check-in from a site supervisor becomes a client-ready update. The studio owner reviews and publishes in one tap; the client reads status themselves. Clients also get an **inspiration feed** of progress photos from the studio's other sites (with the owners' consent, anonymised) and, if they bought one, their **AMC status**. Built for "Design by Aarav".
 
-First, run the development server:
-
+## Run it locally (3 commands)
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run build
+npm start          # http://localhost:3000  (demo hub with seeded data, JSON-file store)
 ```
+Dev mode: `npm run dev`. Full check: `npm run verify`.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Deploy it
+See **[docs/DEPLOY.md](docs/DEPLOY.md)**: one Postgres database (`DATABASE_URL`) and one `OWNER_TOKEN`, on Vercel or any Node host. Config reference: `.env.example`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Try the demo
+Open `/`, or use the demo links directly:
+| Role | URL |
+|---|---|
+| Supervisor (phone-first) | `/s/demo-supervisor` |
+| Owner | `/a/demo-owner` |
+| Clients | `/c/demo-client-sharma`, `/c/demo-client-mehta`, `/c/demo-client-verma`, `/c/demo-client-kapoor` |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Story: Sharma is late with a blocked ceiling and an update waiting; Mehta is slightly behind and bought an AMC that starts at handover; Verma is on track; Kapoor is finished with an active AMC (1 of 4 visits done). Mehta's client page shows the inspiration feed built from the other three homes.
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Before real use
+- **The demo is for local use only.** It uses public links. With `DATABASE_URL` set it is off automatically.
+- **Auth is pilot-grade**: whoever holds a link has that role. See `docs/fde/NOTES.md` for the gaps and open questions.
