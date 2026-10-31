@@ -1,7 +1,10 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+
+// connection() needs a real Next request scope; in a direct handler call it is a no-op.
+vi.mock("next/server", () => ({ connection: async () => undefined }));
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "sv-admin-"));
 process.env.DATA_DIR = dir;
