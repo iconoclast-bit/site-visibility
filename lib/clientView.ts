@@ -7,7 +7,7 @@
 import { AMC_LABEL, AMC_TONE, computeAmc, type AmcStatus } from "./amc";
 import { fmtDate, fmtLong } from "./dates";
 import { slipPhrase, firstName } from "./draft";
-import { buildFeed, type FeedPost } from "./feed";
+import { buildFeed, buildFinishedHomes, type FeedPost, type FinishedHome } from "./feed";
 import { completionDate, computeSchedule, plainReason, timelineRows, type TimelineRow } from "./schedule";
 import type { Checkin, Interest, ISODate, Project } from "./types";
 
@@ -50,6 +50,7 @@ export interface ClientView {
   timeline: { rows: TimelineRow[]; today: ISODate; axisStart: ISODate; axisEnd: ISODate };
   updates: ClientUpdate[];
   feed: FeedPost[]; // other sites, consent-gated and anonymised (see lib/feed.ts)
+  finished: FinishedHome[]; // the common gallery of other clients' finished homes (same gate)
   interested: string[]; // feed post ids this client already asked about
   amc: ClientAmc | null; // only when this client bought an AMC
   studioHref: string; // WhatsApp link to the studio
@@ -138,7 +139,8 @@ export function buildClientView({ project, studioName, studioPhone, projects, ch
     };
   }
   const feed = buildFeed(project, projects, allCheckins, today);
-  const postIds = new Set(feed.map((p) => p.id));
+  const finished = buildFinishedHomes(project, projects, allCheckins, interests, today);
+  const postIds = new Set([...feed.map((p) => p.id), ...finished.map((h) => h.id)]);
 
   return {
     studioName,
@@ -157,6 +159,7 @@ export function buildClientView({ project, studioName, studioPhone, projects, ch
     timeline: { rows, today, axisStart, axisEnd },
     updates,
     feed,
+    finished,
     interested: interests.filter((i) => i.projectId === project.id && postIds.has(i.showcaseId)).map((i) => i.showcaseId),
     amc,
     studioHref: waLink(studioPhone, `Hi, this is ${firstName(project.clientName)} (${project.name}).`),

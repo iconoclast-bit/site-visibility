@@ -88,7 +88,7 @@ export function NewProjectForm({ token, supervisors, today }: { token: string; s
 
       <label className="radio consent">
         <input type="checkbox" checked={f.showcase} onChange={(e) => set("showcase", e.target.checked)} data-testid="np-showcase" />
-        <span><strong>The client agrees to show progress photos of their home to other clients</strong> on the inspiration feed. No name or address is shown, and you choose which photos. You can change this later.</span>
+        <span><strong>The client agrees to show progress photos of their home to other clients</strong> on the inspiration feed and finished-homes gallery, together with whether the home has an AMC. No name or address is shown, and you choose which photos. You can change this later.</span>
       </label>
 
       {error && <p className="err" role="alert" data-testid="np-error">{error}</p>}

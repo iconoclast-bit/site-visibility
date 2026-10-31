@@ -10,11 +10,19 @@
  * home label ("3BHK · Modern minimal"), the stage shown, a date, an owner-written
  * caption, and an opaque photo handle.
  */
-import { fmtDate } from "./dates";
-import { computeSchedule } from "./schedule";
-import type { Checkin, ISODate, Project } from "./types";
+import { AMC_LABEL, computeAmc } from "./amc";
+import { fmtDate, fmtLong } from "./dates";
+import { completionDate, computeSchedule } from "./schedule";
+import type { Checkin, Interest, ISODate, Project } from "./types";
 
 export interface FeedPhoto { id: string; url: string; alt: string }
+/** Whether that home's owner bought an AMC. Shown with the owner's showcase consent; no name or price. */
+export interface AmcBadge {
+  has: boolean;
+  plan?: string; // "Gold AMC"
+  status?: string; // "Active" | "Expiring soon" | "Expired" | "Starts after handover"
+}
+
 export interface FeedPost {
   id: string; // opaque: the first photo's handle
   label: string; // "3BHK · Modern minimal"
@@ -22,10 +30,26 @@ export interface FeedPost {
   progress: string; // "Completed" | "In progress · 60% done"
   dateLabel: string;
   caption: string;
+  amc: AmcBadge;
+  photos: FeedPhoto[];
+}
+
+/** A completed home: the common gallery of finished results. One card per home, newest first. */
+export interface FinishedHome {
+  id: string; // opaque: the first photo's handle (used by the "I'd like something like this" button)
+  label: string; // "3BHK · Classic warm"
+  completedOn: string; // "7 Jun 2026"
+  caption: string;
+  amc: AmcBadge;
+  wants: number; // how many clients asked for a similar design (a count, never who)
   photos: FeedPhoto[];
 }
 
 export const FEED_LIMIT = 20;
+export const FINISHED_LIMIT = 12;
+export const FINISHED_PHOTOS = 8;
+/** "Final result" photos come from the last stages of the plan (e.g. paint, fittings, handover). */
+export const FINAL_STAGES = 3;
 /** At most this many posts per site, newest first, so one busy site cannot crowd out the others. */
 export const PER_SITE_LIMIT = 5;
 
@@ -37,12 +61,21 @@ export function feedPhotoUrl(id: string, clientToken: string): string {
   return `/api/feed/${id}?t=${encodeURIComponent(clientToken)}`;
 }
 
+/** AMC badge for a home, evaluated today from its published history. */
+export function amcBadge(p: Project, approved: Checkin[], today: ISODate): AmcBadge {
+  if (!p.amc) return { has: false };
+  const sched = computeSchedule(p, approved, today);
+  const v = computeAmc(p.amc, completionDate(p.stages, approved), sched.forecastEnd, today);
+  return { has: true, plan: p.amc.plan, status: AMC_LABEL[v.status] };
+}
+
 export function buildFeed(viewer: Project, projects: Project[], checkins: Checkin[], today: ISODate, limit = FEED_LIMIT): FeedPost[] {
   const posts: (FeedPost & { sort: string; pid: string })[] = [];
   for (const p of projects) {
     if (p.id === viewer.id || !p.showcase) continue;
     const mine = checkins.filter((c) => c.projectId === p.id);
     const approved = mine.filter((c) => c.review === "approved");
+    const badge = amcBadge(p, approved, today);
     for (const c of approved) {
       const shown = (c.showcase ?? []).filter((s) => c.photos.some((x) => x.fileName === s.fileName));
       if (!shown.length) continue;
@@ -60,6 +93,7 @@ export function buildFeed(viewer: Project, projects: Project[], checkins: Checki
         progress: sched.complete ? "Completed" : `In progress · ${sched.percent}% done`,
         dateLabel: fmtDate(c.date),
         caption: c.showcaseCaption ?? "",
+        amc: badge,
         photos: shown.map((s) => ({
           id: s.id,
           url: feedPhotoUrl(s.id, viewer.clientToken),
@@ -78,8 +112,49 @@ export function buildFeed(viewer: Project, projects: Project[], checkins: Checki
       return n <= PER_SITE_LIMIT;
     });
   return capped.slice(0, limit).map((p) => ({
-    id: p.id, label: p.label, stageNames: p.stageNames, progress: p.progress, dateLabel: p.dateLabel, caption: p.caption, photos: p.photos,
+    id: p.id, label: p.label, stageNames: p.stageNames, progress: p.progress, dateLabel: p.dateLabel, caption: p.caption, amc: p.amc, photos: p.photos,
   }));
+}
+
+/**
+ * The common gallery of FINISHED homes. Same gate as the feed (consent + published + owner-selected
+ * + not the viewer's own home), and the home must be complete today. Photos are the owner's
+ * selections from the last stages of the plan, newest first.
+ */
+export function buildFinishedHomes(viewer: Project, projects: Project[], checkins: Checkin[], interests: Interest[], today: ISODate, limit = FINISHED_LIMIT): FinishedHome[] {
+  const homes: (FinishedHome & { sort: string })[] = [];
+  for (const p of projects) {
+    if (p.id === viewer.id || !p.showcase) continue;
+    const approved = checkins.filter((c) => c.projectId === p.id && c.review === "approved");
+    const sched = computeSchedule(p, approved, today);
+    const done = completionDate(p.stages, approved);
+    if (!sched.complete || !done) continue;
+
+    const finalStages = new Set(p.stages.slice(-FINAL_STAGES).map((s) => s.id));
+    const chronological = [...approved].sort((a, b) => (a.date === b.date ? a.createdAt.localeCompare(b.createdAt) : a.date.localeCompare(b.date)));
+    const all = chronological.flatMap((c) => (c.showcase ?? []).filter((x) => c.photos.some((ph) => ph.fileName === x.fileName)).map((x) => ({ ...x, caption: c.showcaseCaption ?? "" })));
+    if (!all.length) continue;
+    const finals = all.filter((x) => finalStages.has(x.stageId));
+    const chosen = (finals.length ? finals : all).slice(-FINISHED_PHOTOS).reverse(); // newest first
+    const label = homeLabel(p);
+    const ids = new Set(all.map((x) => x.id));
+    const wants = new Set(interests.filter((i) => ids.has(i.showcaseId)).map((i) => i.projectId)).size;
+    homes.push({
+      sort: done,
+      id: chosen[0].id,
+      label,
+      completedOn: fmtLong(done),
+      caption: chosen.find((x) => x.caption)?.caption ?? "",
+      amc: amcBadge(p, approved, today),
+      wants,
+      photos: chosen.map((x) => ({
+        id: x.id,
+        url: feedPhotoUrl(x.id, viewer.clientToken),
+        alt: `${label}: ${p.stages.find((st) => st.id === x.stageId)?.name ?? "finished home"}`,
+      })),
+    });
+  }
+  return homes.sort((a, b) => b.sort.localeCompare(a.sort)).slice(0, limit).map(({ sort, ...h }) => (void sort, h));
 }
 
 /** Is this showcase photo currently allowed to be shown to clients? Used by the photo route and the interest API. */

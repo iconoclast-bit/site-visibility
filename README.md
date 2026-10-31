@@ -1,6 +1,6 @@
 # Site Visibility
 
-One 3-minute daily check-in from a site supervisor becomes a client-ready update. The studio owner reviews and publishes in one tap; the client reads status themselves. Clients also get an **inspiration feed** of progress photos from the studio's other sites (with the owners' consent, anonymised) and, if they bought one, their **AMC status**. Built for "Design by Aarav".
+One 3-minute daily check-in from a site supervisor becomes a client-ready update. The studio owner reviews and publishes in one tap; the client reads status themselves. Clients also get an **inspiration section**: finished homes and work-in-progress photos from the studio's other sites (with the owners' consent, anonymised), each tagged with whether that home has an AMC and, if they bought one, their **AMC status**. Built for "Design by Aarav".
 
 ## Run it locally (3 commands)
 ```bash

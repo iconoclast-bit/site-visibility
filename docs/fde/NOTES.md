@@ -8,6 +8,7 @@ Baseline to capture before a pilot (not yet measured): minutes/day the owner spe
 - **Deployable**: `PgStore` (any Postgres via `DATABASE_URL`), schema auto-created, passes the same contract tests as the JSON store. `docs/DEPLOY.md` has the Vercel + Neon steps. Demo is off by default whenever a database is configured; a real deployment needs a strong `OWNER_TOKEN`. `/api/health` for uptime checks.
 - **Run the studio without editing JSON**: owner creates projects and supervisors in the browser, edits settings, manages the AMC and logs service visits.
 - **Inspiration feed on the client page**: progress photos from the studio's other sites, so a client can see a look and ask for something similar ("I'd like something like this" goes to the owner as a design lead with the photo and a WhatsApp reply link). Consent-gated per project, owner picks the photos, no names/addresses, newest first, at most 5 posts per site, six shown at a time.
+- **Finished homes gallery** (same section, above work in progress): other clients' completed homes, final-stage photos first, with an AMC tag ("Has an AMC · Gold AMC · Active" or "No AMC") and a count of how many clients asked for a similar design. Same consent and owner-selection gates; the AMC tag is covered by the showcase consent wording.
 - **AMC card on the client page** (only when bought): status (starts after handover / active / expiring soon / expired), validity and days left, visits used of included, next visit due, coverage, visit history, renew-on-WhatsApp when expiring or expired.
 - Photo upload budget so a check-in always fits a 4.5 MB request limit.
 
@@ -49,7 +50,7 @@ Baseline to capture before a pilot (not yet measured): minutes/day the owner spe
 4. **JSON-file store is dev/demo only**; deploy with Postgres. Photos in Postgres are fine for a pilot; move to object storage when the database grows.
 5. Owners cannot yet edit a project's stages or dates, or delete/archive a project, from the UI. Supervisor reassignment is also not in the UI.
 5a. **Reopening a stage on a finished project** (a snag fix by the supervisor) shows the project as "late" (the forecast is deterministic). Use AMC visits for post-handover work, or archive finished projects from the supervisor list (not built).
-5b. Feed: no per-client "not interested" or hiding, no pagination beyond 20 posts, interests have no status (new / contacted). Photo content is checked by the owner by eye, not automatically (faces, nameplates).
+5b. Feed is read-only: no comments or posting between clients (a real forum needs identity and moderation). No per-client "not interested" or hiding, no pagination beyond 20 posts, interests have no status (new / contacted). Photo content is checked by the owner by eye, not automatically (faces, nameplates).
 5c. AMC: no payments, no reminders to the client or owner before a visit is due or the AMC expires (the card shows it only when the client opens the page).
 6. **No notification** when a check-in arrives or a project turns late (owner must open the dashboard). WhatsApp is manual (wa.me).
 7. Stage template and durations are placeholders; per-project stage editing is not exposed.

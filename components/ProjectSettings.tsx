@@ -25,7 +25,7 @@ export function ProjectSettings({ token, projectId, initial }: { token: string; 
       <form onSubmit={save} className="stack-sm">
         <label className="radio consent">
           <input type="checkbox" checked={f.showcase} onChange={(e) => setF({ ...f, showcase: e.target.checked })} data-testid="set-showcase" />
-          <span><strong>Feature this home on the inspiration feed.</strong> Only with the client&apos;s permission. Other clients see the photos you pick, labelled only with the home type and style. Turning it off removes them from the feed at once.</span>
+          <span><strong>Feature this home on the inspiration feed.</strong> Only with the client&apos;s permission. Other clients see the photos you pick, labelled only with the home type and style, plus whether this home has an AMC (once finished it also appears in the finished-homes gallery). Turning it off removes everything at once.</span>
         </label>
         <div className="grid cols-2">
           <div><label className="field-label" htmlFor="set-type" style={{ marginTop: 0 }}>Home type</label><input id="set-type" className="input" value={f.homeType} maxLength={20} onChange={(e) => setF({ ...f, homeType: e.target.value })} placeholder="3BHK" /></div>

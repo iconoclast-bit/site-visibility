@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { FeedPost } from "@/lib/feed";
+import { AmcBadge } from "./AmcBadge";
 import { InterestButton } from "./InterestButton";
 import { PhotoGrid } from "./PhotoGrid";
 
@@ -19,6 +20,7 @@ export function InspirationFeed({ posts, token, interested }: { posts: FeedPost[
             <span className={`badge ${post.progress === "Completed" ? "ok" : "info"}`}>{post.progress}</span>
           </div>
           <div className="small muted" style={{ margin: "2px 0 6px" }}>{post.stageNames.join(" · ")} · {post.dateLabel}</div>
+          <div style={{ margin: "0 0 6px" }}><AmcBadge amc={post.amc} /></div>
           {post.caption && <p className="small" style={{ margin: "0 0 4px" }}>{post.caption}</p>}
           <PhotoGrid photos={post.photos} />
           <InterestButton token={token} postId={post.id} initiallySent={interested.includes(post.id)} label={post.label} />

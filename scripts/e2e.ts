@@ -504,7 +504,7 @@ async function suite(browser: Browser, backend: Backend, exifJpeg: Buffer) {
     const sup = await (await fetch(`${base}/s/${newSupToken}`)).text();
     assert.ok(sup.includes("Rao 3BHK") && !sup.includes("Mehta"), "supervisor list shows only their own site");
     const noAmc = await (await fetch(`${base}/c/${newClientToken}`)).text();
-    assert.ok(!noAmc.includes("Annual Maintenance Contract"), "no AMC card without an AMC");
+    assert.ok(!noAmc.includes('data-testid="amc-card"'), "no AMC card without an AMC");
     // the owner dashboard now lists the project and its supervisor
     const dash = await (await fetch(`${base}/a/${OWNER}`)).text();
     assert.ok(dash.includes("Rao 3BHK") && dash.includes("Salim"));
@@ -696,6 +696,69 @@ async function suite(browser: Browser, backend: Backend, exifJpeg: Buffer) {
     await assertNoHScroll(k.page, "client with AMC");
     await k.page.screenshot({ path: path.join(SHOTS, `${backend}-phone-client-kapoor.png`), fullPage: true });
     await k.ctx.close();
+  });
+
+  console.log("\nFinished homes gallery");
+  await step("finished homes: other clients' completed homes with the AMC tag, social proof and interest", async () => {
+    const mehta = await newPage(browser, "finished-mehta", phoneOpts());
+    await mehta.page.goto(`${base}/c/${CLIENT("mehta")}`);
+    await mehta.page.waitForSelector('[data-testid="finished-homes"]');
+    const homes = mehta.page.locator('[data-testid="finished-home"]');
+    assert.equal(await homes.count(), 1, "only Kapoor is finished (and it is not Mehta's own)");
+    assert.equal((await homes.first().locator('[data-testid="finished-label"]').textContent())?.trim(), "3BHK · Classic warm");
+    assert.match((await homes.first().textContent()) ?? "", /Finished · \d+ \w{3} \d{4}/);
+    assert.match((await homes.first().locator('[data-testid="amc-badge"]').textContent()) ?? "", /Has an AMC · Gold AMC · Active/, "the home bought an AMC");
+    assert.ok((await homes.first().locator('[data-testid="photo-thumb"]').count()) >= 3, "final-result photos");
+    await assertImagesLoaded(mehta.page, "finished homes");
+    await mehta.page.screenshot({ path: path.join(SHOTS, `${backend}-phone-client-finished.png`), fullPage: true });
+
+    // The AMC tag is on the work-in-progress posts too, both ways.
+    const posts = mehta.page.locator('[data-testid="in-progress-feed"] [data-testid="feed-post"]');
+    const n = await posts.count();
+    assert.ok(n > 0);
+    for (let i = 0; i < n; i++) {
+      const label = (await posts.nth(i).locator('[data-testid="feed-label"]').textContent()) ?? "";
+      const badge = (await posts.nth(i).locator('[data-testid="amc-badge"]').textContent()) ?? "";
+      if (/Classic warm/.test(label)) assert.match(badge, /Has an AMC/); else assert.match(badge, /^No AMC$/);
+    }
+
+    // Interest on a finished home reaches the owner, and other clients see only a count.
+    assert.equal(await homes.first().locator('[data-testid="finished-wants"]').count(), 0, "nobody has asked yet");
+    await homes.first().locator('[data-testid="interest-btn"]').click();
+    await homes.first().locator('[data-testid="interest-sent"]').waitFor();
+    await mehta.page.reload();
+    await mehta.page.waitForSelector('[data-testid="finished-homes"]');
+    assert.match((await mehta.page.textContent('[data-testid="finished-wants"]')) ?? "", /^1 client has asked for a similar design$/);
+    await mehta.ctx.close();
+
+    const verma = await newPage(browser, "finished-verma", phoneOpts());
+    await verma.page.goto(`${base}/c/${CLIENT("verma")}`);
+    await verma.page.waitForSelector('[data-testid="finished-homes"]');
+    const vText = (await verma.page.locator('[data-testid="finished-home"]').first().textContent()) ?? "";
+    assert.match(vText, /1 client has asked for a similar design/, "social proof is visible to others");
+    assert.ok(!/Mehta|Rohan/.test(vText), "never who");
+    await verma.ctx.close();
+
+    const own = await newPage(browser, "finished-own", phoneOpts());
+    await own.page.goto(`${base}/c/${CLIENT("kapoor")}`);
+    await own.page.waitForSelector('[data-testid="client-page"]');
+    assert.equal(await own.page.locator('[data-testid="finished-home"]').count(), 0, "a client never sees their own home in the gallery");
+    await own.ctx.close();
+
+    const ownerPage = await newPage(browser, "finished-owner", desktopOpts);
+    await ownerPage.page.goto(`${base}/a/${OWNER}`);
+    await ownerPage.page.locator('[data-testid="interest-row"]').first().waitFor();
+    assert.ok((await ownerPage.page.locator('[data-testid="interest-row"]').allTextContents()).some((t) => /Rohan Mehta \(Mehta 2BHK\) liked 3BHK · Classic warm/.test(t)), "owner sees the lead");
+    await ownerPage.ctx.close();
+
+    // Without an AMC the tag says so.
+    const del = await fetch(`${base}/api/projects/p-kapoor/amc`, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ token: OWNER, amc: null }) });
+    assert.equal(del.status, 200);
+    const again = await newPage(browser, "finished-noamc", phoneOpts());
+    await again.page.goto(`${base}/c/${CLIENT("mehta")}`);
+    await again.page.waitForSelector('[data-testid="finished-homes"]');
+    assert.equal((await again.page.locator('[data-testid="finished-home"] [data-testid="amc-badge"]').first().textContent())?.trim(), "No AMC");
+    await again.ctx.close();
   });
 
   console.log("\nPhotos stay under the host's request limit");

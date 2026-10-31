@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
+import { FinishedHomes } from "@/components/FinishedHomes";
 import { InspirationFeed } from "@/components/InspirationFeed";
 import { PhotoGrid } from "@/components/PhotoGrid";
 import { Timeline } from "@/components/Timeline";
@@ -49,7 +50,7 @@ async function ClientPage({ params }: Pick<PageProps<"/c/[token]">, "params">) {
 
       <nav className="subnav" aria-label="Sections" data-testid="subnav">
         <a href="#progress">My project</a>
-        {v.feed.length > 0 && <a href="#inspiration" data-testid="nav-inspiration">Inspiration</a>}
+        {(v.feed.length > 0 || v.finished.length > 0) && <a href="#inspiration" data-testid="nav-inspiration">Inspiration</a>}
         {v.amc && <a href="#amc" data-testid="nav-amc">AMC</a>}
       </nav>
 
@@ -93,11 +94,24 @@ async function ClientPage({ params }: Pick<PageProps<"/c/[token]">, "params">) {
         </section>
       </div>
 
-      {v.feed.length > 0 && (
+      {(v.feed.length > 0 || v.finished.length > 0) && (
         <section id="inspiration" className="card scroll-target" aria-labelledby="insp-h" data-testid="inspiration">
-          <h2 id="insp-h">Inspiration from our other sites</h2>
-          <p className="muted small">Work in progress and finished looks from homes we are designing, shared with the owners&apos; permission. Tap a photo to enlarge it. Like something? Tell us and we will plan a similar design for your home.</p>
-          <InspirationFeed posts={v.feed} token={token} interested={v.interested} />
+          <h2 id="insp-h">Inspiration from our other homes</h2>
+          <p className="muted small">Finished homes and work in progress from other families we are designing for, shared with their permission and without names or addresses. Tap a photo to enlarge it. The tag shows whether that home has an Annual Maintenance Contract (AMC). Like something? Tell us and we will plan a similar design for your home.</p>
+
+          {v.finished.length > 0 && (
+            <div data-testid="finished-homes">
+              <h3 style={{ margin: "14px 0 0" }}>Finished homes</h3>
+              <FinishedHomes homes={v.finished} token={token} interested={v.interested} />
+            </div>
+          )}
+
+          {v.feed.length > 0 && (
+            <div data-testid="in-progress-feed">
+              <h3 style={{ margin: "18px 0 0" }}>Work in progress</h3>
+              <InspirationFeed posts={v.feed} token={token} interested={v.interested} />
+            </div>
+          )}
         </section>
       )}
 
