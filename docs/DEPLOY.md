@@ -39,6 +39,16 @@ alter role sv_app set search_path = sv;
 
 3. Deploy.
 
+### Deploying with the Vercel CLI (no GitHub needed)
+If the Vercel project already exists with its environment variables (as in the Supabase setup above), deploy from this folder:
+```bash
+npm i -g vercel            # or use npx vercel@latest
+vercel login
+vercel link --project site-visibility --scope <your-vercel-scope> --yes
+vercel deploy --prod
+```
+`.gitignore` keeps `node_modules`, `.next` and `.data` out of the upload. Later, connect the GitHub repo under Project -> Settings -> Git for push-to-deploy (this needs the Vercel GitHub app to have access to the repo).
+
 ## 3. Check it
 - `https://<your-domain>/api/health` returns `{"ok":true}`.
 - `https://<your-domain>/` is a 404 (the demo hub is off).
